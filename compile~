@@ -64,11 +64,11 @@ CIILIBS=`pkg-config --libs cii40`
 # path for libraries containing .o files (-L and -l)
 #
 CFLAGS="-I. -I/comp/40/include $CIIFLAGS"
-LIBS="$CIILIBS -lcii40-O2 -lm"    # might add more libraries for some projects
+LIBS="$CIILIBS -lcii40-O1 -lm"    # might add more libraries for some projects
 LFLAGS="-L/comp/40/lib64"
 
 # these flags max out warnings and debug info
-FLAGS="-g -O2 -Wall -Wextra -Werror -Wfatal-errors -std=c99 -pedantic"
+FLAGS="-g -O1 -Wall -Wextra -Werror -Wfatal-errors -std=c99 -pedantic"
 
 #########################################################
 #     Clean out old object files and compile everything

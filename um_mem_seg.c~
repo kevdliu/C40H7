@@ -42,8 +42,10 @@ int main(int argc, char *argv[])
         int num_words = ((int) size) / 4; 
 
         /* Load all instruction words from file into the sequence */
-        uint32_t *words = malloc(sizeof(uint32_t) * num_words);
+        uint32_t seg[num_words] = malloc(sizeof(uint32_t) * num_words);
         mem_load_program(words, file_name, num_words);
+
+        assert(Seq_length(words) != 0);
 
         /* Initialize Resource struct */
         Resource res;
@@ -65,7 +67,7 @@ int main(int argc, char *argv[])
         while (res->run == 1) {
                 uint32_t *run_seg = Table_get(res->segments, get_atom(0));
 
-                uint32_t word = run_seg[res->program_counter];
+                uint32_t word = (uint32_t)(uintptr_t) run_seg[res->program_counter];
                 decode_instruction(res, word);
                 res->program_counter++;
         }

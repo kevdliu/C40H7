@@ -114,14 +114,12 @@ void cond_move(Resource res, Instruction instr)
 void seg_load(Resource res, Instruction instr)
 {
         /* Get memory segment */
-        Seq_T seg = Table_get(res->segments, 
+        uint32_t *seg = Table_get(res->segments, 
                         get_atom(res->registers[instr->reg_B]));
         assert(seg != NULL);
 
-        assert(res->registers[instr->reg_C] < (unsigned) Seq_length(seg));
         /* Get value from memory segment and put in register */
-        uint32_t word = (uint32_t)(uintptr_t) Seq_get(seg, 
-                        res->registers[instr->reg_C]);
+        uint32_t word = seg[res->registers[instr->reg_C]];
         res->registers[instr->reg_A] = word; 
 }
 
@@ -134,14 +132,12 @@ void seg_load(Resource res, Instruction instr)
 void seg_store(Resource res, Instruction instr)
 {
         /* Get memory segment */
-        Seq_T seg = Table_get(res->segments, 
+        uint32_t *seg = Table_get(res->segments, 
                         get_atom(res->registers[instr->reg_A]));
         assert(seg != NULL);
 
-        assert(res->registers[instr->reg_B] < (unsigned) Seq_length(seg));
         /* Put value in memory segment */
-        Seq_put(seg, res->registers[instr->reg_B],
-                        (void *)(uintptr_t) res->registers[instr->reg_C]);
+        seg[res->registers[instr->reg_B]] = res->registers[instr->reg_C];
 }
 
 /*

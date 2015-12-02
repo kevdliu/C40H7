@@ -2,7 +2,6 @@
 #define MEM_MANAGER_INCLUDED
 
 #include <stdint.h>
-#include "seq.h"
 #include "structs.h"
 
 /*
@@ -15,7 +14,7 @@
 * contain
 * Returns: nothing
 */
-extern void mem_load_program(Seq_T words, char* path, int num_words);
+extern void mem_load_program(uint32_t *words, char* path, int num_words);
 
 /*
 * Creates a new segment, which is represented as a sequence; inserts
