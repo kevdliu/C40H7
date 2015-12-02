@@ -53,7 +53,7 @@ void mem_load_program(Seq_T words, char* path, int num_words)
 * Returns: a uint32_t of the segment's id
 */
 uint32_t mem_create_segment(Resource res, int num_words)
-{
+{               //TODO: USE QUEUES INSTEAD OF SEQUENCES
         Seq_T seg = Seq_new(num_words);
         /* Fill new sequence with appropriate number of 0's */
         for (int i = 0; i < num_words; i++) {

@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
         res->program_counter = 0;
         res->free_ids = Seq_new(64);
         res->top_id = 1;
-        res->segments = Table_new(64, NULL, NULL);
+        res->segments = Table_new(64, NULL, NULL); //TODO: USE SEQUENCE INSTEAD OF TABLE
 
         /* Put the sequence as the first memory segment */
         Table_put(res->segments, get_atom(0), words);
@@ -67,7 +67,8 @@ int main(int argc, char *argv[])
         while (res->run == 1) {
                 Seq_T run_seg = Table_get(res->segments, get_atom(0));
 
-                uint32_t word = (uint32_t)(uintptr_t) Seq_get(run_seg, res->program_counter);
+                uint32_t word = (uint32_t)(uintptr_t) Seq_get(run_seg, 
+                                res->program_counter);
                 decode_instruction(res, word);
                 res->program_counter++;
         }
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
 void free_res(Resource res)
 {
         Table_T segments = res->segments;
-        for (int i = 0; i < Table_length(segments); i++) {
+        for (int i = 0; i < Table_length(segments); i++) { //TODO: SAVE LENGTH TO LOCAL VAR
                 Seq_T seg = Table_get(segments, get_atom(i));
                 if (seg != NULL) {
                         Seq_free(&seg);

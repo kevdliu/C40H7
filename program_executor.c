@@ -56,7 +56,7 @@ void decode_instruction(Resource res, uint32_t word)
 void function_chooser(Resource res, Instruction instr, uint32_t val)
 {
         int opcode = instr->opcode;
-        if (opcode == 0) {
+        if (opcode == 0) {            
                 cond_move(res, instr);
         } else if (opcode == 1) {
                 seg_load(res, instr);
@@ -310,8 +310,9 @@ void load_program(Resource res, Instruction instr)
                         get_atom(res->registers[instr->reg_B]));
         assert(src_seg != NULL);
 
-        Seq_T dest_seg = Seq_new(Seq_length(src_seg));
-        for (int i = 0; i < Seq_length(src_seg); i++) {
+        int seq_length = Seq_length(src_seg);
+        Seq_T dest_seg = Seq_new(seq_length);        
+        for (int i = 0; i < seq_length; i++) {
                 Seq_addhi(dest_seg, Seq_get(src_seg, i));
         }
 

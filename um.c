@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
         res->program_counter = 0;
         res->free_ids = Seq_new(64);
         res->top_id = 1;
-        res->segments = Table_new(64, NULL, NULL);
+        res->segments = Table_new(64, NULL, NULL); //TODO: USE SEQUENCE INSTEAD OF TABLE
 
         /* Put the sequence as the first memory segment */
         Table_put(res->segments, get_atom(0), words);
@@ -86,7 +86,8 @@ int main(int argc, char *argv[])
 void free_res(Resource res)
 {
         Table_T segments = res->segments;
-        for (int i = 0; i < Table_length(segments); i++) {
+        int table_length = Table_length(segments);
+        for (int i = 0; i < table_length; i++) {
                 Seq_T seg = Table_get(segments, get_atom(i));
                 if (seg != NULL) {
                         Seq_free(&seg);

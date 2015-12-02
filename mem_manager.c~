@@ -98,7 +98,7 @@ uint32_t mem_create_id(Resource res)
         if (Seq_length(res->free_ids) == 0) {
                 /* Make sure the id don't exceed the max value for a 32-bit 
                 unsigned integer */
-                assert(res->top_id <= 4294967295);
+                assert(res->top_id <= 4294967294);
 
                 uint32_t new_id = res->top_id;
                 res->top_id++;
