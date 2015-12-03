@@ -94,7 +94,7 @@ done
 # One case statement per exectuble binary
 
 case $link in
-  all|um) $CC $FLAGS $LFLAGS -o um um.o $LIBS 
+  all|um) $CC $FLAGS $LFLAGS -o um um.o mem_manager.o program_executor.o $LIBS 
                   linked=yes ;;
 esac
 

@@ -2,6 +2,8 @@
 #define STRUCTS_INCLUDED
 
 #include <stdint.h>
+#include "seq.h"
+#include "table.h"
 
 /* Struct that contains all of the resources available to the UM 
 (registers, memory segments, program counter etc.) */
