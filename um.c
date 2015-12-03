@@ -16,7 +16,6 @@
 #include <inttypes.h>
 
 #include "program_executor.h"
-#include "seq.h"
 #include "mem.h"
 #include "mem_manager.h"
 #include "structs.h"
@@ -40,7 +39,7 @@ int main(int argc, char *argv[])
         int num_words = ((int) size) / 4; 
 
         /* Load all instruction words from file into the sequence */
-        uint32_t *words = malloc(sizeof(uint32_t) * num_words);
+        uint32_t *words = malloc(sizeof(uint32_t) * (num_words + 1)); // add 1 b/c first element is the length
         mem_load_program(words, file_name, num_words);
 
         /* Initialize Resource struct */
@@ -50,18 +49,19 @@ int main(int argc, char *argv[])
         uint32_t registers[] = {0, 0, 0, 0, 0, 0, 0, 0}; 
         res->registers = registers;
         res->run = 1;
-        res->program_counter = 0;
+        res->program_counter = 1; // add 1 b/c first element is the length
         res->free_ids = Seq_new(64);
         res->top_id = 1;
-        res->segments = Seq_new(64);
+        res->segments = malloc(sizeof(uint32_t *) * 64);
+        res->num_segments = 64;
 
         /* Put the sequence as the first memory segment */
-        Seq_addhi(res->segments, words);
+        res->segments[0] = words;
 
         /* Execution loop that gets the first memory segment and runs the 
         instruction word according to the program counter */
         while (res->run == 1) {
-                uint32_t *run_seg = Seq_get(res->segments, 0);
+                uint32_t *run_seg = res->segments[0];
 
                 uint32_t word = run_seg[res->program_counter];
                 decode_instruction(res, word);
@@ -78,17 +78,18 @@ int main(int argc, char *argv[])
 * Arguments: the Resource struct to be freed
 * Returns: nothing
 */
+
 void free_res(Resource res)
 {
-        Seq_T segments = res->segments;
-        int seq_length = Seq_length(segments);
-        for (int i = 0; i < seq_length; i++) {
-                uint32_t *seg = Seq_get(segments, i);
+        uint32_t **segments = res->segments;
+        unsigned seg_length = res->num_segments;
+        for (unsigned i = 0; i < seg_length; i++) {
+                uint32_t *seg = segments[i];
                 if (seg != NULL) {
                         free(seg);
                 }
         }
-        Seq_free(&segments);
+        free(*segments);
 
         Seq_T free_ids = res->free_ids;
         Seq_free(&free_ids);

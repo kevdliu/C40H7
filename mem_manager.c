@@ -31,7 +31,8 @@
 void mem_load_program(uint32_t *words, char* path, int num_words)
 {
         FILE* program = fopen(path, "rb");
-        for (int i = 0; i < num_words; i++) {
+        words[0] = num_words; // add 1 b/c first element is the length
+        for (int i = 1; i <= num_words; i++) {
                 uint32_t word = 0;
                 /* Read the word 8 bits at a time to not overflow char */
                 for (int x = 1; x <= 4; x++) {
@@ -41,7 +42,7 @@ void mem_load_program(uint32_t *words, char* path, int num_words)
 
                 words[i] = word;
         }
-        fclose(program);
+        // fclose(program);
 }
 
 /*
@@ -54,17 +55,20 @@ void mem_load_program(uint32_t *words, char* path, int num_words)
 */
 uint32_t mem_create_segment(Resource res, int num_words)
 {
-        uint32_t *seg = malloc(sizeof(uint32_t) * num_words);
-        for (int i = 0; i < num_words; i++) {
+        uint32_t *seg = malloc(sizeof(uint32_t) * (num_words + 1)); // add 1 b/c first element is the length
+        seg[0] = num_words;
+        for (int i = 1; i <= num_words; i++) {
                 seg[i] = 0;
         }
 
         uint32_t id = mem_create_id(res);
-        if (id >= (unsigned) Seq_length(res->segments)) {
-                Seq_addhi(res->segments, seg);
-        } else {
-                Seq_put(res->segments, id, seg);
+
+        /* Enlarge array of segments if needed */
+        if (id >= res->num_segments) {
+                res->segments = realloc(res->segments, sizeof(uint32_t *) * res->num_segments * 2);      
+                res->num_segments *= 2;
         }
+        res->segments[id] = seg;
 
         return id;
 }
@@ -79,7 +83,7 @@ uint32_t mem_create_segment(Resource res, int num_words)
 */
 void mem_delete_segment(Resource res, uint32_t old_id)
 {
-        uint32_t *seg = Seq_get(res->segments, old_id);
+        uint32_t *seg = res->segments[old_id];
         assert(seg != NULL);
 
         free(seg);

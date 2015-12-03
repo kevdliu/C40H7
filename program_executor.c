@@ -116,12 +116,12 @@ void cond_move(Resource res, Instruction instr)
 void seg_load(Resource res, Instruction instr)
 {
         /* Get memory segment */
-        uint32_t *seg = Seq_get(res->segments, 
-                        res->registers[instr->reg_B]);
+        uint32_t *seg = res->segments[ 
+                        res->registers[instr->reg_B]];
         assert(seg != NULL);
 
         /* Get value from memory segment and put in register */
-        uint32_t word = seg[res->registers[instr->reg_C]];
+        uint32_t word = seg[res->registers[instr->reg_C] + 1]; // add 1 b/c first element is the length
         res->registers[instr->reg_A] = word; 
 }
 
@@ -134,12 +134,12 @@ void seg_load(Resource res, Instruction instr)
 void seg_store(Resource res, Instruction instr)
 {
         /* Get memory segment */
-        uint32_t *seg = Seq_get(res->segments, 
-                        res->registers[instr->reg_A]);
+        uint32_t *seg = res->segments[ 
+                        res->registers[instr->reg_A]];
         assert(seg != NULL);
 
         /* Put value in memory segment */
-        seg[res->registers[instr->reg_B]] = res->registers[instr->reg_C];
+        seg[res->registers[instr->reg_B] + 1] = res->registers[instr->reg_C]; // add 1 b/c first element is the length
 }
 
 /*
@@ -296,27 +296,28 @@ void load_program(Resource res, Instruction instr)
         if (res->registers[instr->reg_B] == 0) {
                 /*Decrements the new counter by one since it will be
                         incremented right after in main() */
-                res->program_counter = res->registers[instr->reg_C] - 1;
+                res->program_counter = res->registers[instr->reg_C] - 1 + 1; // add 1 b/c first element is the length
                 return;
         }
 
-        uint32_t *seg = Seq_get(res->segments, 0);
+        uint32_t *seg = res->segments[0];
         free(seg);
         seg = NULL;
 
-        /* Copy each word from src_seg to dest_seg */
-        Seq_T src_seg = Seq_get(res->segments,
-                        res->registers[instr->reg_B]);
+        // Copy each word from src_seg to dest_seg 
+        uint32_t *src_seg = res->segments[
+                        res->registers[instr->reg_B]];
         assert(src_seg != NULL);
 
-        int seq_length = Seq_length(src_seg);
-        Seq_T dest_seg = Seq_new(seq_length);        
-        for (int i = 0; i < seq_length; i++) {
-                Seq_addhi(dest_seg, Seq_get(src_seg, i));
+        unsigned seg_length = src_seg[0];
+        uint32_t *dest_seg = malloc(sizeof(uint32_t) * (seg_length + 1)); // add 1 b/c first element is the length
+                
+        for (unsigned i = 0; i <= seg_length; i++) {
+                dest_seg[i] = src_seg[i];
         }
 
-        Seq_put(res->segments, 0, dest_seg);
-        res->program_counter = res->registers[instr->reg_C] - 1;
+        res->segments[0] = dest_seg;
+        res->program_counter = res->registers[instr->reg_C] - 1 + 1; // add 1 b/c first element is the length   
 }
 
 /*
