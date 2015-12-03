@@ -8,7 +8,7 @@
 /* Struct that contains all of the resources available to the UM 
 (registers, memory segments, program counter etc.) */
 typedef struct {
-        Table_T segments;
+        Seq_T segments;
         Seq_T free_ids;
         uint32_t *registers;
         uint32_t program_counter;        

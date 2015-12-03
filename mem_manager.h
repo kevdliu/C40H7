@@ -45,11 +45,4 @@ extern void mem_delete_segment(Resource res, uint32_t id);
 */
 extern uint32_t mem_create_id(Resource res);
 
-/*
-* Converts a uint32_t to an atom to be utilized as a key in the Hanson table
-* Arguments: the uint32_t id to be converted
-* Returns: a character pointer
-*/
-extern const char* get_atom(uint32_t id);
-
 #endif

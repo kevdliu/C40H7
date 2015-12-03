@@ -18,10 +18,8 @@
 #include "program_executor.h"
 #include "seq.h"
 #include "mem.h"
-#include "table.h"
 #include "mem_manager.h"
 #include "structs.h"
-#include "assert.h"
 
 /* Frees all resources when done */
 void free_res(Resource res);
@@ -55,22 +53,22 @@ int main(int argc, char *argv[])
         res->program_counter = 0;
         res->free_ids = Seq_new(64);
         res->top_id = 1;
-        res->segments = Table_new(64, NULL, NULL); //TODO: USE SEQUENCE INSTEAD OF TABLE
+        res->segments = Seq_new(64);
 
         /* Put the sequence as the first memory segment */
-        Table_put(res->segments, get_atom(0), words);
+        Seq_addhi(res->segments, words);
 
         /* Execution loop that gets the first memory segment and runs the 
         instruction word according to the program counter */
         while (res->run == 1) {
-                uint32_t *run_seg = Table_get(res->segments, get_atom(0));
+                uint32_t *run_seg = Seq_get(res->segments, 0);
 
                 uint32_t word = run_seg[res->program_counter];
                 decode_instruction(res, word);
                 res->program_counter++;
         }
 
-        free_res(res);
+        // free_res(res);
 
         return 0;
 }
@@ -82,15 +80,15 @@ int main(int argc, char *argv[])
 */
 void free_res(Resource res)
 {
-        Table_T segments = res->segments;
-        int table_length = Table_length(segments);
-        for (int i = 0; i < table_length; i++) {
-                uint32_t *seg = Table_get(segments, get_atom(i));
+        Seq_T segments = res->segments;
+        int seq_length = Seq_length(segments);
+        for (int i = 0; i < seq_length; i++) {
+                uint32_t *seg = Seq_get(segments, i);
                 if (seg != NULL) {
                         free(seg);
                 }
         }
-        Table_free(&segments);
+        Seq_free(&segments);
 
         Seq_T free_ids = res->free_ids;
         Seq_free(&free_ids);

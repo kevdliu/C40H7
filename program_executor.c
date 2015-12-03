@@ -56,6 +56,7 @@ void decode_instruction(Resource res, uint32_t word)
 void function_chooser(Resource res, Instruction instr, uint32_t val)
 {
         int opcode = instr->opcode;
+
         if (opcode == 0) {            
                 cond_move(res, instr);
         } else if (opcode == 1) {
@@ -85,6 +86,7 @@ void function_chooser(Resource res, Instruction instr, uint32_t val)
         } else if (opcode == 13) {
                 load_val(res, instr, val);
         } else {
+                printf("OP: %d \n", opcode);
                 assert(0);
         }
 
@@ -114,8 +116,8 @@ void cond_move(Resource res, Instruction instr)
 void seg_load(Resource res, Instruction instr)
 {
         /* Get memory segment */
-        uint32_t *seg = Table_get(res->segments, 
-                        get_atom(res->registers[instr->reg_B]));
+        uint32_t *seg = Seq_get(res->segments, 
+                        res->registers[instr->reg_B]);
         assert(seg != NULL);
 
         /* Get value from memory segment and put in register */
@@ -132,8 +134,8 @@ void seg_load(Resource res, Instruction instr)
 void seg_store(Resource res, Instruction instr)
 {
         /* Get memory segment */
-        uint32_t *seg = Table_get(res->segments, 
-                        get_atom(res->registers[instr->reg_A]));
+        uint32_t *seg = Seq_get(res->segments, 
+                        res->registers[instr->reg_A]);
         assert(seg != NULL);
 
         /* Put value in memory segment */
@@ -298,12 +300,13 @@ void load_program(Resource res, Instruction instr)
                 return;
         }
 
-        Seq_T seg = Table_remove(res->segments, get_atom(0));
-        Seq_free(&seg);
+        uint32_t *seg = Seq_get(res->segments, 0);
+        free(seg);
+        seg = NULL;
 
         /* Copy each word from src_seg to dest_seg */
-        Seq_T src_seg = Table_get(res->segments,
-                        get_atom(res->registers[instr->reg_B]));
+        Seq_T src_seg = Seq_get(res->segments,
+                        res->registers[instr->reg_B]);
         assert(src_seg != NULL);
 
         int seq_length = Seq_length(src_seg);
@@ -312,7 +315,7 @@ void load_program(Resource res, Instruction instr)
                 Seq_addhi(dest_seg, Seq_get(src_seg, i));
         }
 
-        Table_put(res->segments, get_atom(0), dest_seg);
+        Seq_put(res->segments, 0, dest_seg);
         res->program_counter = res->registers[instr->reg_C] - 1;
 }
 

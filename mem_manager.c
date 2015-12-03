@@ -60,7 +60,11 @@ uint32_t mem_create_segment(Resource res, int num_words)
         }
 
         uint32_t id = mem_create_id(res);
-        Table_put(res->segments, get_atom(id), seg);
+        if (id >= (unsigned) Seq_length(res->segments)) {
+                Seq_addhi(res->segments, seg);
+        } else {
+                Seq_put(res->segments, id, seg);
+        }
 
         return id;
 }
@@ -75,10 +79,11 @@ uint32_t mem_create_segment(Resource res, int num_words)
 */
 void mem_delete_segment(Resource res, uint32_t old_id)
 {
-        uint32_t *seg = Table_remove(res->segments, get_atom(old_id));
+        uint32_t *seg = Seq_get(res->segments, old_id);
         assert(seg != NULL);
 
         free(seg);
+        seg = NULL;
 
         /* Add now available id to the sequence of free id's */
         Seq_addhi(res->free_ids, (void *)(uintptr_t) old_id);
@@ -108,15 +113,3 @@ uint32_t mem_create_id(Resource res)
         return id;
 }
 
-/*
-* Converts a uint32_t to an atom to be utilized as a key in the Hanson table
-* Arguments: the uint32_t id to be converted
-* Returns: a character pointer
-*/
-const char* get_atom(uint32_t id)
-{
-        char str_id[32];
-        sprintf(str_id, "%u", id);
-        const char *atom_key = Atom_new(str_id, strlen(str_id));
-        return atom_key;
-}
