@@ -28,21 +28,21 @@ static inline void mem_delete_segment(Resource res, uint32_t id);
 static inline uint32_t mem_create_id(Resource res);
 
 static inline void decode_instruction(Resource res, uint32_t word);
-static inline void function_chooser(Resource res, Instruction instr, uint32_t val);
-static inline void cond_move(Resource res, Instruction instr);
-static inline void seg_load(Resource res, Instruction instr);
-static inline void seg_store(Resource res, Instruction instr);
-static inline void add(Resource res, Instruction instr);
-static inline void multiply(Resource res, Instruction instr);
-static inline void division(Resource res, Instruction instr);
-static inline void bitwise_nand(Resource res, Instruction instr);
+static inline void function_chooser(Resource res, int opcode, int reg_A, int reg_B, int reg_C, uint32_t val);
+static inline void cond_move(Resource res, int reg_A, int reg_B, int reg_C);
+static inline void seg_load(Resource res, int reg_A, int reg_B, int reg_C);
+static inline void seg_store(Resource res, int reg_A, int reg_B, int reg_C);
+static inline void add(Resource res, int reg_A, int reg_B, int reg_C);
+static inline void multiply(Resource res, int reg_A, int reg_B, int reg_C);
+static inline void division(Resource res, int reg_A, int reg_B, int reg_C);
+static inline void bitwise_nand(Resource res, int reg_A, int reg_B, int reg_C);
 static inline void halt(Resource res);
-static inline void map_seg(Resource res, Instruction instr);
-static inline void unmap_seg(Resource res, Instruction instr);
-static inline void output(Resource res, Instruction instr);
-static inline void input(Resource res, Instruction instr);
-static inline void load_program(Resource res, Instruction instr);
-static inline void load_val(Resource res, Instruction instr, uint32_t val);
+static inline void map_seg(Resource res, int reg_B, int reg_C);
+static inline void unmap_seg(Resource res, int reg_C);
+static inline void output(Resource res, int reg_C);
+static inline void input(Resource res, int reg_C);
+static inline void load_program(Resource res, int reg_B, int reg_C);
+static inline void load_val(Resource res, int reg_A, uint32_t val);
 
 static inline void free_res(Resource res);
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
                 res->program_counter++;
         }
 
-        // free_res(res);
+        free_res(res);
 
         return 0;
 }
@@ -108,23 +108,19 @@ int main(int argc, char *argv[])
 */
 static inline void decode_instruction(Resource res, uint32_t word)
 {
-        Instruction instr;
-        NEW(instr);
-
         int opcode = (int) unpack(word, 4, 32 - 4);
 
-        instr->opcode = opcode;
         if (opcode != 13) {
-                instr->reg_A = (int) unpack(word, 3, 6);
-                instr->reg_B = (int) unpack(word, 3, 3);
-                instr->reg_C = (int) unpack(word, 3, 0);
+                int reg_A = (int) unpack(word, 3, 6);
+                int reg_B = (int) unpack(word, 3, 3);
+                int reg_C = (int) unpack(word, 3, 0);
 
-                function_chooser(res, instr, 0);
+                function_chooser(res, opcode, reg_A, reg_B, reg_C, 0);
         } else if (opcode == 13) {
-                instr->reg_A = (int) unpack(word, 3, 32 - 7);
+                int reg_A = (int) unpack(word, 3, 32 - 7);
                 uint32_t val = unpack(word, 25, 0);
 
-                function_chooser(res, instr, val);
+                function_chooser(res, opcode, reg_A, 0, 0, val);
         }
 }
 
@@ -135,41 +131,37 @@ static inline void decode_instruction(Resource res, uint32_t word)
 * extracted value for when the opcode is 13
 * Returns: nothing
 */
-static inline void function_chooser(Resource res, Instruction instr, uint32_t val)
+static inline void function_chooser(Resource res, int opcode, int reg_A, int reg_B, int reg_C, uint32_t val)
 {
-        int opcode = instr->opcode;
-
         if (opcode == 0) {            
-                cond_move(res, instr);
+                cond_move(res, reg_A, reg_B, reg_C);
         } else if (opcode == 1) {
-                seg_load(res, instr);
+                seg_load(res, reg_A, reg_B, reg_C);
         } else if (opcode == 2) {
-                seg_store(res, instr);
+                seg_store(res, reg_A, reg_B, reg_C);
         } else if (opcode == 3) {
-                add(res, instr);
+                add(res, reg_A, reg_B, reg_C);
         } else if (opcode == 4) {
-                multiply(res, instr);
+                multiply(res, reg_A, reg_B, reg_C);
         } else if (opcode == 5) {
-                division(res, instr);
+                division(res, reg_A, reg_B, reg_C);
         } else if (opcode == 6) {
-                bitwise_nand(res, instr);
+                bitwise_nand(res, reg_A, reg_B, reg_C);
         } else if (opcode == 7) {
                 halt(res);
         } else if (opcode == 8) {
-                map_seg(res, instr);
+                map_seg(res, reg_B, reg_C);
         } else if (opcode == 9) {
-                unmap_seg(res, instr);
+                unmap_seg(res, reg_C);
         } else if (opcode == 10) {
-                output(res, instr);
+                output(res, reg_C);
         } else if (opcode == 11) {
-                input(res, instr);
+                input(res, reg_C);
         } else if (opcode == 12) {
-                load_program(res, instr);
+                load_program(res, reg_B, reg_C);
         } else if (opcode == 13) {
-                load_val(res, instr, val);
+                load_val(res, reg_A, val);
         }
-
-        FREE(instr);
 }
 
 /*
@@ -179,10 +171,10 @@ static inline void function_chooser(Resource res, Instruction instr, uint32_t va
 * opcode and the register numbers to be utilized
 * returns: nothing
 */
-static inline void cond_move(Resource res, Instruction instr)
+static inline void cond_move(Resource res, int reg_A, int reg_B, int reg_C)
 {
-        if (res->registers[instr->reg_C] != 0) {
-                res->registers[instr->reg_A] = res->registers[instr->reg_B];
+        if (res->registers[reg_C] != 0) {
+                res->registers[reg_A] = res->registers[reg_B];
         }
 }
 
@@ -192,15 +184,15 @@ static inline void cond_move(Resource res, Instruction instr)
 * with the opcode and the register numbers to be utilized
 * Returns: nothing
 */
-static inline void seg_load(Resource res, Instruction instr)
+static inline void seg_load(Resource res, int reg_A, int reg_B, int reg_C)
 {
         /* Get memory segment */
         uint32_t *seg = res->segments[ 
-                        res->registers[instr->reg_B]];
+                        res->registers[reg_B]];
 
         /* Get value from memory segment and put in register */
-        uint32_t word = seg[res->registers[instr->reg_C] + 1]; // add 1 b/c first element is the length
-        res->registers[instr->reg_A] = word; 
+        uint32_t word = seg[res->registers[reg_C] + 1]; // add 1 b/c first element is the length
+        res->registers[reg_A] = word; 
 }
 
 /*
@@ -209,14 +201,14 @@ static inline void seg_load(Resource res, Instruction instr)
 * Instruction struct 'instr' with the opcode and the registers
 * Returns: nothing
 */
-static inline void seg_store(Resource res, Instruction instr)
+static inline void seg_store(Resource res, int reg_A, int reg_B, int reg_C)
 {
         /* Get memory segment */
         uint32_t *seg = res->segments[ 
-                        res->registers[instr->reg_A]];
+                        res->registers[reg_A]];
 
         /* Put value in memory segment */
-        seg[res->registers[instr->reg_B] + 1] = res->registers[instr->reg_C]; // add 1 b/c first element is the length
+        seg[res->registers[reg_B] + 1] = res->registers[reg_C]; // add 1 b/c first element is the length
 }
 
 /*
@@ -228,15 +220,15 @@ static inline void seg_store(Resource res, Instruction instr)
 * Instruction struct 'instr' with the opcode and the registers
 * Returns: nothing
 */
-static inline void add(Resource res, Instruction instr)
+static inline void add(Resource res, int reg_A, int reg_B, int reg_C)
 {
-        uint32_t b = res->registers[instr->reg_B];
-        uint32_t c = res->registers[instr->reg_C];
+        uint32_t b = res->registers[reg_B];
+        uint32_t c = res->registers[reg_C];
         uint64_t max_int = 1;
         max_int = max_int << 32;
         uint32_t a = (b + c) % max_int;
 
-        res->registers[instr->reg_A] = a; 
+        res->registers[reg_A] = a; 
 }
 
 /*
@@ -248,15 +240,15 @@ static inline void add(Resource res, Instruction instr)
 * Instruction struct 'instr' with the opcode and the registers
 * Returns: nothing
 */
-static inline void multiply(Resource res, Instruction instr)
+static inline void multiply(Resource res, int reg_A, int reg_B, int reg_C)
 {
-        uint32_t b = res->registers[instr->reg_B];
-        uint32_t c = res->registers[instr->reg_C];
+        uint32_t b = res->registers[reg_B];
+        uint32_t c = res->registers[reg_C];
         uint64_t max_int = 1;
         max_int = max_int << 32;
         uint32_t a = (b * c) % max_int;
 
-        res->registers[instr->reg_A] = a;
+        res->registers[reg_A] = a;
 }
 
 /*
@@ -266,14 +258,14 @@ static inline void multiply(Resource res, Instruction instr)
 * Instruction struct 'instr' with the opcode and the registers
 * Returns: nothing
 */
-static inline void division(Resource res, Instruction instr)
+static inline void division(Resource res, int reg_A, int reg_B, int reg_C)
 {
-        uint32_t b = res->registers[instr->reg_B];
-        uint32_t c = res->registers[instr->reg_C];
+        uint32_t b = res->registers[reg_B];
+        uint32_t c = res->registers[reg_C];
 
         uint32_t a = (b / c);
 
-        res->registers[instr->reg_A] = a;
+        res->registers[reg_A] = a;
 }
 
 /*
@@ -283,12 +275,12 @@ static inline void division(Resource res, Instruction instr)
 * Instruction struct 'instr' with the opcode and the registers
 * Returns: nothing
 */
-static inline void bitwise_nand(Resource res, Instruction instr)
+static inline void bitwise_nand(Resource res, int reg_A, int reg_B, int reg_C)
 {
-        uint32_t b = res->registers[instr->reg_B];
-        uint32_t c = res->registers[instr->reg_C];
+        uint32_t b = res->registers[reg_B];
+        uint32_t c = res->registers[reg_C];
         uint32_t a = ~(b & c);
-        res->registers[instr->reg_A] = a;
+        res->registers[reg_A] = a;
 }
 
 /*
@@ -308,10 +300,10 @@ static inline void halt(Resource res)
 * opcode and the register numbers to be utilized
 * Returns: nothing
 */
-static inline void map_seg(Resource res, Instruction instr)
+static inline void map_seg(Resource res, int reg_B, int reg_C)
 {
-        uint32_t id = mem_create_segment(res, res->registers[instr->reg_C]);
-        res->registers[instr->reg_B] = id;
+        uint32_t id = mem_create_segment(res, res->registers[reg_C]);
+        res->registers[reg_B] = id;
 }
 
 /*
@@ -320,9 +312,9 @@ static inline void map_seg(Resource res, Instruction instr)
 * the opcode and the register numbers to be utilized
 * Returns: nothing
 */
-static inline void unmap_seg(Resource res, Instruction instr)
+static inline void unmap_seg(Resource res, int reg_C)
 {
-        mem_delete_segment(res, res->registers[instr->reg_C]);
+        mem_delete_segment(res, res->registers[reg_C]);
 }
 
 /*
@@ -331,11 +323,11 @@ static inline void unmap_seg(Resource res, Instruction instr)
 * Instruction struct 'instr' with the opcode and the registers
 * Returns: nothing
 */
-static inline void output(Resource res, Instruction instr)
+static inline void output(Resource res, int reg_C)
 {
-        uint32_t reg_C = res->registers[instr->reg_C];
+        uint32_t val_reg_C = res->registers[reg_C];
 
-        putchar((int) reg_C);
+        putchar((int) val_reg_C);
 }
 
 /*
@@ -345,15 +337,15 @@ static inline void output(Resource res, Instruction instr)
 * with the coding opcode and the three registers to be utilized
 * Returns: nothing
 */
-static inline void input(Resource res, Instruction instr)
+static inline void input(Resource res, int reg_C)
 {
         char input;
         input = getchar();
 
         if (input == EOF){
-                res->registers[instr->reg_C] = ~0;
+                res->registers[reg_C] = ~0;
         } else {
-                res->registers[instr->reg_C] = (uint32_t) input;
+                res->registers[reg_C] = (uint32_t) input;
         }
 }
 
@@ -364,22 +356,21 @@ static inline void input(Resource res, Instruction instr)
 * Instruction struct 'instr' with the opcode and the registers
 * Returns: nothing
 */
-static inline void load_program(Resource res, Instruction instr)
+static inline void load_program(Resource res, int reg_B, int reg_C)
 {
-        if (res->registers[instr->reg_B] == 0) {
+        if (res->registers[reg_B] == 0) {
                 /*Decrements the new counter by one since it will be
                         incremented right after in main() */
-                res->program_counter = res->registers[instr->reg_C] - 1 + 1; // add 1 b/c first element is the length
+                res->program_counter = res->registers[reg_C] - 1 + 1; // add 1 b/c first element is the length
                 return;
         }
 
         uint32_t *seg = res->segments[0];
         free(seg);
-        seg = NULL;
 
         // Copy each word from src_seg to dest_seg 
         uint32_t *src_seg = res->segments[
-                        res->registers[instr->reg_B]];
+                        res->registers[reg_B]];
 
         unsigned seg_length = src_seg[0];
         uint32_t *dest_seg = malloc(sizeof(uint32_t) * (seg_length + 1)); // add 1 b/c first element is the length
@@ -389,7 +380,7 @@ static inline void load_program(Resource res, Instruction instr)
         }
 
         res->segments[0] = dest_seg;
-        res->program_counter = res->registers[instr->reg_C] - 1 + 1; // add 1 b/c first element is the length   
+        res->program_counter = res->registers[reg_C] - 1 + 1; // add 1 b/c first element is the length   
 }
 
 /*
@@ -399,9 +390,9 @@ static inline void load_program(Resource res, Instruction instr)
 * the opcode and the three register numbers to be utilized
 * Returns: nothing
 */
-static inline void load_val(Resource res, Instruction instr, uint32_t val)
+static inline void load_val(Resource res, int reg_A, uint32_t val)
 {
-        res->registers[instr->reg_A] = val;
+        res->registers[reg_A] = val;
 }
 
 /* _______________________________________________________________________________________________________________________________________________*/
@@ -490,8 +481,8 @@ static inline uint32_t mem_create_segment(Resource res, int num_words)
 static inline void mem_delete_segment(Resource res, uint32_t old_id)
 {
         uint32_t *seg = res->segments[old_id];
-
         free(seg);
+        *seg = 0;
 
         /* Add now available id to the sequence of free id's */
         Seq_addhi(res->free_ids, (void *)(uintptr_t) old_id);
@@ -524,18 +515,17 @@ static inline uint32_t mem_create_id(Resource res)
 * Arguments: the Resource struct to be freed
 * Returns: nothing
 */
-
 static inline void free_res(Resource res)
 {
         uint32_t **segments = res->segments;
-        unsigned seg_length = res->num_segments;
-        for (unsigned i = 0; i < seg_length; i++) {
+        unsigned max_id = res->top_id;
+        for (unsigned i = 0; i < max_id; i++) {
                 uint32_t *seg = segments[i];
-                if (seg != NULL) {
+                if (*seg != 0) {
                         free(seg);
                 }
         }
-        free(*segments);
+        // free(*segments);
 
         Seq_T free_ids = res->free_ids;
         Seq_free(&free_ids);

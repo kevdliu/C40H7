@@ -15,13 +15,4 @@ typedef struct {
         int run;
 } *Resource;
 
-/* Struct that contains the information necessary to execute the 
-instruction (the operation code and the three registers) */
-typedef struct {
-    int reg_A;
-    int reg_B;
-    int reg_C;
-    int opcode;
-} *Instruction;
-
 #endif
